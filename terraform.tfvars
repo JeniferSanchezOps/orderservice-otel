@@ -1,4 +1,4 @@
-project_id       = "iron-crane-478902-g6"
+project_id       = "upbeat-climate-496321-g5"
 region           = "us-central1"
 zone             = "us-central1-a"
 credentials_file = "/Users/jenifersanchez/tf-gke-sa-key.json"
@@ -8,3 +8,5 @@ node_count       = 2
 machine_type     = "e2-medium"
 replicas         = 3
 image            = "jensanchez/orderservice:v7"
+otel_exporter_endpoint = "http://localhost:4318"
+enable_otel             = true

@@ -8,6 +8,37 @@
   - DEMO_MODE=true   # set to "true" to enable demo random responses
 */
 
+// OpenTelemetry setup
+const { NodeSDK } = require('@opentelemetry/sdk-node');
+const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
+const { Resource } = require('@opentelemetry/resources');
+const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
+
+const otelExporterOtlpEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318';
+
+const sdk = new NodeSDK({
+  resource: new Resource({
+    [SemanticResourceAttributes.SERVICE_NAME]: 'orderservice',
+    [SemanticResourceAttributes.SERVICE_VERSION]: '1.0.0',
+  }),
+  traceExporter: new OTLPTraceExporter({
+    url: `${otelExporterOtlpEndpoint}/v1/traces`,
+  }),
+  instrumentations: [getNodeAutoInstrumentations()],
+});
+
+sdk.start();
+process.on('SIGTERM', () => {
+  sdk.shutdown()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error('Error shutting down SDK', err);
+      process.exit(1);
+    });
+});
+
+
 const express = require('express');
 const fetch = require('node-fetch'); // npm i node-fetch@2
 require('dotenv').config(); // optional: npm i dotenv
@@ -104,4 +135,5 @@ app.get('/orders/:id/status', async (req, res) => {
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`Order status service listening on http://localhost:${PORT}`);
+  console.log(`OpenTelemetry endpoint: ${otelExporterOtlpEndpoint}`);
 });

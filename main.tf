@@ -90,30 +90,21 @@ resource "kubernetes_deployment" "orders" {
         container {
           name  = "orderservice"
           image = var.image
-          # do not pull from registry; use image present on node
           image_pull_policy = "IfNotPresent"
+
+          env {
+            name  = "DEMO_MODE"
+            value = "true"
+          }
+
+          env {
+            name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value = var.otel_exporter_endpoint
+          }
 
           port {
             container_port = 3000
           }
-             env {
-            name  = "DEMO_MODE"
-            value = "true"
-        }
-
-        env {
-            name  = "NODE_ENV"
-            value = "production"
-        }
-
-        env {
-            name  = "PORT"
-            value = "3000"
-        }
-          env {
-            name  = "ENCARGO_API_BASE"
-            value = "https://dummy.encargo.api"
-        }
 
           readiness_probe {
             http_get {

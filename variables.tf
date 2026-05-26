@@ -1,7 +1,7 @@
 variable "project_id" {
   description = "GCP project id"
   type        = string
-  default     = "iron-crane-478902-g6"
+  default     = "upbeat-climate-496321-g5"
 }
 
 variable "region" {
@@ -58,7 +58,6 @@ variable "image" {
   default     = "jensanchez/orderservice:v7"
 }
 
-// ...existing code...
 variable "dockerhub_username" {
   description = "Docker Hub username"
   type        = string
@@ -70,3 +69,16 @@ variable "dockerhub_password" {
   type        = string
   default     = ""
 }
+
+variable "otel_exporter_endpoint" {
+  description = "OpenTelemetry exporter endpoint"
+  type        = string
+  default     = "http://localhost:4318"
+}
+
+variable "enable_otel" {
+  description = "Enable OpenTelemetry"
+  type        = bool
+  default     = true
+}
+
