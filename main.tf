@@ -99,7 +99,7 @@ resource "kubernetes_deployment" "orders" {
 
           env {
             name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
-            value = var.otel_exporter_endpoint
+            value = "http://jaeger-otlp.observability:4318"
           }
 
           port {

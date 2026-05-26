@@ -8,5 +8,5 @@ node_count       = 2
 machine_type     = "e2-medium"
 replicas         = 3
 image            = "jensanchez/orderservice:v7"
-otel_exporter_endpoint = "http://localhost:4318"
+otel_exporter_endpoint = "http://jaeger-otlp.observability:4318"
 enable_otel             = true
