@@ -76,20 +76,47 @@ curl http://<EXTERNAL_IP>/orders/123/status
 - `ENCARGO_API_KEY`: API key para Encargo
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: Endpoint de OpenTelemetry (default: http://localhost:4318)
 
-## OpenTelemetry
+## OpenTelemetry y Jaeger
 
-El servicio exporta traces en formato OTLP. Para recopilar y visualizar:
+El servicio exporta traces a Jaeger para observabilidad completa. Jaeger se despliega automáticamente en el namespace `observability` via Terraform.
+
+### Acceder a Jaeger UI
 
 ```bash
-# Desplegar Jaeger en Kubernetes
-kubectl create namespace observability
-kubectl apply -f https://raw.githubusercontent.com/jaegertracing/jaeger-kubernetes/master/jaeger-all-in-one.yaml -n observability
-
-# Port-forward a Jaeger UI
-kubectl port-forward -n observability svc/jaeger 16686:16686
-
-# Visita http://localhost:16686
+# Obtener IP del LoadBalancer de Jaeger
+JAEGER_IP=$(kubectl get svc jaeger-ui -n observability -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+echo "Abre: http://$JAEGER_IP:16686"
 ```
+
+O usar port-forward local:
+
+```bash
+kubectl port-forward -n observability svc/jaeger-ui 16686:16686 &
+# Luego abre http://localhost:16686
+```
+
+### Generar Traces
+
+Haz llamadas a la API para generar tráfico y traces:
+
+```bash
+ORDERSERVICE_IP=$(kubectl get svc orderservice-lb -n orders -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+for i in {1..10}; do
+  curl http://$ORDERSERVICE_IP/health
+  curl http://$ORDERSERVICE_IP/orders/$i/status
+  sleep 1
+done
+```
+
+Luego ve a Jaeger UI y busca el servicio "orderservice" en el dropdown para ver todos los traces con detalles de latencia y errores.
+
+### Componentes
+
+- **Jaeger Deployment**: `jaeger-tf` (namespace: observability)
+- **OTLP Endpoint**: `http://jaeger-otlp.observability:4318` (interno en el cluster)
+- **Jaeger UI Port**: 16686 (expuesto via LoadBalancer)
+- **Jaeger Compact Port**: 6831/UDP (para legacy clients)
 
 ## Endpoints
 
