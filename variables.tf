@@ -55,7 +55,7 @@ variable "replicas" {
 variable "image" {
   description = "Container image to deploy"
   type        = string
-  default     = "jensanchez/orderservice:v7"
+  default     = "jensanchez/orderservice:v11"
 }
 
 variable "dockerhub_username" {

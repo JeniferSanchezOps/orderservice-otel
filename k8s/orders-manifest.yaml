@@ -42,7 +42,7 @@ spec:
         - name: dockerhub-secret
       containers:
         - name: orderservice
-          image: jensanchez/orderservice:v7
+          image: jensanchez/orderservice:v9
           ports:
             - containerPort: 3000
           env:

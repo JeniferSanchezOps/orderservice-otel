@@ -17,4 +17,4 @@ COPY . .
 ENV NODE_ENV=production
 EXPOSE 3000
 
-CMD ["node", "orderservice.js"]
+CMD ["node", "-r", "./tracing.js", "orderservice.js"]

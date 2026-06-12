@@ -90,12 +90,16 @@ resource "kubernetes_deployment" "orders" {
         container {
           name  = "orderservice"
           image = var.image
-          image_pull_policy = "IfNotPresent"
+          image_pull_policy = "Always"
 
           env {
             name  = "DEMO_MODE"
             value = "true"
           }
+         env {
+             name  = "OTEL_RESOURCE_ATTRIBUTES"
+             value = "service.name=orderservice"
+         }
 
           env {
             name  = "OTEL_EXPORTER_OTLP_ENDPOINT"

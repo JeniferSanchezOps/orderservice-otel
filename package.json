@@ -3,20 +3,15 @@
   "version": "1.0.0",
   "main": "orderservice.js",
   "scripts": {
-    "start": "node orderservice.js"
+    "start": "node -r ./tracing.js orderservice.js"
   },
-  "dependencies": {
-    "express": "^4.18.2",
+   "dependencies": {
+    "express": "^4.21.2",
     "node-fetch": "2.6.9",
-    "dotenv": "^16.0.0",
-    "@opentelemetry/api": "^1.7.0",
-    "@opentelemetry/sdk-node": "^0.45.0",
-    "@opentelemetry/sdk-trace-node": "^0.45.0",
-    "@opentelemetry/resources": "^0.45.0",
-    "@opentelemetry/semantic-conventions": "^0.45.0",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.45.0",
-    "@opentelemetry/instrumentation": "^0.45.0",
-    "@opentelemetry/instrumentation-http": "^0.45.0",
-    "@opentelemetry/instrumentation-express": "^0.32.0"
+    "dotenv": "^16.4.5",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/sdk-node": "^0.57.2",
+    "@opentelemetry/auto-instrumentations-node": "^0.57.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.57.2"
   }
 }
