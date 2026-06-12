@@ -1,139 +1,292 @@
-# Encargo Order Service with OpenTelemetry
+# Orderservice - OpenTelemetry, Jaeger and Kubernetes Demo
 
-Servicio de estado de órdenes para la empresa Encargo (delivery). Incluye:
-- Node.js Express API con modo demo
-- OpenTelemetry para observabilidad
-- Kubernetes deployment con 2+ réplicas
-- Terraform para infraestructura en GCP
-- LoadBalancer expuesto a internet
+## Overview
 
-## Requisitos
+This project demonstrates how to deploy a Node.js microservice on Google Kubernetes Engine (GKE) with distributed tracing using OpenTelemetry and Jaeger.
 
-- Node.js 18+
-- Docker & Docker Buildx
-- Terraform >= 1.0
-- kubectl
-- gcloud CLI
-- Cuenta GCP con billing habilitado
+The application exposes a simple REST API that simulates order status lookups for a delivery company and automatically generates traces that can be visualized in Jaeger.
 
-## Estructura
+## Architecture
 
+```text
+Client
+   |
+   v
+LoadBalancer Service
+   |
+   v
+Orderservice (Node.js + Express)
+   |
+   v
+OpenTelemetry SDK
+   |
+   v
+OTLP Exporter (HTTP 4318)
+   |
+   v
+Jaeger Collector
+   |
+   v
+Jaeger UI
 ```
-├── orderservice.js         # Servicio principal con OpenTelemetry
-├── package.json            # Dependencias Node.js
-├── Dockerfile              # Imagen Docker
-├── main.tf                 # Configuración Kubernetes y GCP
-├── variables.tf            # Variables Terraform
-├── terraform.tfvars        # Valores de variables
-├── outputs.tf              # Outputs de Terraform
-├── k8s/
-│   └── orders-manifest.yaml # Manifiestos Kubernetes (opcional)
-└── README.md               # Este archivo
+
+## Features
+
+* Node.js Express REST API
+* OpenTelemetry auto-instrumentation
+* Distributed tracing with Jaeger
+* Docker containerization
+* Kubernetes deployment on GKE
+* Health checks (Liveness and Readiness Probes)
+* Horizontal scaling support
+* Infrastructure as Code ready
+* Demo mode for testing without external dependencies
+
+---
+
+## API Endpoints
+
+### Health Check
+
+```http
+GET /health
 ```
 
-## Inicio rápido
+Response:
 
-### Local
+```json
+{
+  "status": "ok",
+  "service": "orderservice"
+}
+```
+
+### Order Status
+
+```http
+GET /orders/{id}/status
+```
+
+Example:
+
+```http
+GET /orders/123/status
+```
+
+Response:
+
+```json
+{
+  "orderId": "123",
+  "provider": "encargo",
+  "status": "out_for_delivery",
+  "timestamp": "2026-06-04T02:00:49.932Z"
+}
+```
+
+---
+
+## Local Execution
+
+### Install Dependencies
 
 ```bash
 npm install
-export DEMO_MODE=true
+```
+
+### Run Application
+
+```bash
 npm start
-# Visita http://localhost:3000/health
 ```
 
-### Docker
+Application starts on:
 
-```bash
-docker build -t jensanchez/orderservice:latest .
-docker run -p 3000:3000 -e DEMO_MODE=true jensanchez/orderservice:latest
+```text
+http://localhost:3000
 ```
 
-### Kubernetes en GCP con Terraform
+---
+
+## Environment Variables
+
+| Variable                    | Description              | Default               |
+| --------------------------- | ------------------------ | --------------------- |
+| PORT                        | Application port         | 3000                  |
+| DEMO_MODE                   | Enable demo responses    | false                 |
+| OTEL_SERVICE_NAME           | Service name for tracing | orderservice          |
+| OTEL_EXPORTER_OTLP_ENDPOINT | Jaeger OTLP endpoint     | http://localhost:4318 |
+
+Example:
 
 ```bash
-# Configurar GCP
-gcloud auth login
-gcloud config set project <PROJECT_ID>
-
-# Crear infraestructura
-terraform init
-terraform apply -auto-approve
-
-# Obtener IP del LoadBalancer
-kubectl get svc orderservice-lb -n orders -o wide
-
-# Probar API
-curl http://<EXTERNAL_IP>/health
-curl http://<EXTERNAL_IP>/orders/123/status
+export DEMO_MODE=true
+export OTEL_SERVICE_NAME=orderservice
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger-otlp.observability:4318
 ```
 
-## Variables de Entorno
+---
 
-- `PORT`: Puerto del servidor (default: 3000)
-- `DEMO_MODE`: Habilitar modo demo con datos aleatorios (default: false)
-- `ENCARGO_API_BASE`: URL base de la API de Encargo
-- `ENCARGO_API_KEY`: API key para Encargo
-- `OTEL_EXPORTER_OTLP_ENDPOINT`: Endpoint de OpenTelemetry (default: http://localhost:4318)
+## Docker Build
 
-## OpenTelemetry y Jaeger
-
-El servicio exporta traces a Jaeger para observabilidad completa. Jaeger se despliega automáticamente en el namespace `observability` via Terraform.
-
-### Acceder a Jaeger UI
+### Build Image
 
 ```bash
-# Obtener IP del LoadBalancer de Jaeger
-JAEGER_IP=$(kubectl get svc jaeger-ui -n observability -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-echo "Abre: http://$JAEGER_IP:16686"
+docker build -t orderservice .
 ```
 
-O usar port-forward local:
+### Run Container
 
 ```bash
-kubectl port-forward -n observability svc/jaeger-ui 16686:16686 &
-# Luego abre http://localhost:16686
+docker run -p 3000:3000 orderservice
 ```
 
-### Generar Traces
+---
 
-Haz llamadas a la API para generar tráfico y traces:
+## Build for GKE (Mac M-Series)
 
 ```bash
-ORDERSERVICE_IP=$(kubectl get svc orderservice-lb -n orders -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+docker buildx build \
+--platform linux/amd64 \
+-t <dockerhub-user>/orderservice:v1 \
+--push .
+```
 
-for i in {1..10}; do
-  curl http://$ORDERSERVICE_IP/health
-  curl http://$ORDERSERVICE_IP/orders/$i/status
-  sleep 1
+---
+
+## Kubernetes Deployment
+
+Deploy the application:
+
+```bash
+kubectl apply -f deployment.yaml
+```
+
+Verify:
+
+```bash
+kubectl get pods -n orders
+```
+
+Check logs:
+
+```bash
+kubectl logs -n orders deployment/orderservice-deployment
+```
+
+---
+
+## OpenTelemetry Configuration
+
+The service uses automatic instrumentation:
+
+```javascript
+getNodeAutoInstrumentations()
+```
+
+Collected traces are exported through:
+
+```text
+OTLP HTTP Exporter
+```
+
+Destination:
+
+```text
+http://jaeger-otlp.observability:4318
+```
+
+---
+
+## Generate Sample Traffic
+
+```bash
+for i in {1..20}; do
+  curl http://<LOAD_BALANCER_IP>/orders/$i/status
 done
 ```
 
-Luego ve a Jaeger UI y busca el servicio "orderservice" en el dropdown para ver todos los traces con detalles de latencia y errores.
+---
 
-### Componentes
+## Access Jaeger
 
-- **Jaeger Deployment**: `jaeger-tf` (namespace: observability)
-- **OTLP Endpoint**: `http://jaeger-otlp.observability:4318` (interno en el cluster)
-- **Jaeger UI Port**: 16686 (expuesto via LoadBalancer)
-- **Jaeger Compact Port**: 6831/UDP (para legacy clients)
+Open:
 
-## Endpoints
-
-- `GET /health` - Health check
-- `GET /orders/:id/status` - Obtener estado de orden
-
-## Deployment
-
-```bash
-# Push a Docker Hub
-docker buildx build --platform linux/amd64 -t jensanchez/orderservice:latest --push .
-
-# Actualizar en Kubernetes
-kubectl set image deployment/orderservice-deployment -n orders orderservice=jensanchez/orderservice:latest
-kubectl rollout status deployment/orderservice-deployment -n orders
+```text
+http://<JAEGER_UI_IP>:16686
 ```
 
-## Licencia
+Search for:
 
-MIT
+```text
+orderservice
+```
+
+Expected traces:
+
+```text
+GET /orders/:id/status
+GET /health
+```
+
+---
+
+## Monitoring and Troubleshooting
+
+### Check Pod Status
+
+```bash
+kubectl get pods -n orders
+```
+
+### Check Events
+
+```bash
+kubectl describe pod <pod-name> -n orders
+```
+
+### Current Logs
+
+```bash
+kubectl logs <pod-name> -n orders
+```
+
+### Previous Container Logs
+
+```bash
+kubectl logs -p <pod-name> -n orders
+```
+
+---
+
+## Future Enhancements
+
+* OpenTelemetry Collector
+* Prometheus Metrics
+* Grafana Dashboards
+* Distributed tracing across multiple services
+* CI/CD with GitHub Actions
+* Terraform automation
+* Horizontal Pod Autoscaler (HPA)
+
+---
+
+## Technologies Used
+
+* Node.js
+* Express
+* OpenTelemetry
+* Jaeger
+* Docker
+* Kubernetes
+* Google Kubernetes Engine (GKE)
+* GitHub
+* Docker Hub
+
+---
+
+## Author
+
+Jenifer Sanchez
+
+Performance Engineer | Observability | Cloud Native Technologies
